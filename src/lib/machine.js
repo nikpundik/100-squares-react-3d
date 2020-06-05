@@ -1,27 +1,34 @@
-import { Machine, send } from 'xstate';
+import { Machine, assign } from 'xstate';
 
-import Game from './game2';
-import Renderer from './renderer';
+import Game from './game';
+
+const gameToContext = (game) => ({
+  isStuck: game.isStuck(),
+  isComplete: game.isComplete(),
+  currentBox: game.currentBox,
+  result: game.getResult(),
+});
 
 const isComplete = (context) => {
-  return context.game.isComplete();
+  return context.isComplete;
 };
 
 const isStuck = (context) => {
-  return context.game.isStuck();
+  return context.isStuck;
 };
 
-const next = (context, event) => {
-  context.game.next(event.data.key);
-};
+const next = assign(({ game }, event) => {
+  game.next(event.data.key);
+  return gameToContext(game);
+});
 
-const setup = (context, event) => {
-  context.game = new Game(10);
-  context.renderer = new Renderer(context.game);
-};
-
-const start = send('START');
-const processNext = send('PROCESS');
+const setup = assign(() => {
+  const game = new Game(10);
+  return {
+    game,
+    ...gameToContext(game),
+  };
+});
 
 const gameMachine = Machine(
   {
@@ -29,26 +36,31 @@ const gameMachine = Machine(
     initial: 'launching',
     context: {
       game: null,
-      renderer: null,
+      isStuck: false,
+      isComplete: false,
+      currentBox: null,
+      result: null,
     },
     states: {
       launching: {
-        entry: ['setup', 'start'],
         on: {
-          START: 'playing',
+          START: {
+            target: 'playing',
+            actions: ['setup'],
+          },
         },
       },
       playing: {
         on: {
           NEXT: {
             target: 'processing',
-            actions: ['next', 'processNext'],
+            actions: ['next'],
           },
         },
       },
       processing: {
         on: {
-          PROCESS: [
+          '': [
             {
               target: 'completed',
               cond: 'isComplete',
@@ -62,10 +74,20 @@ const gameMachine = Machine(
         },
       },
       stuck: {
-        on: { RESTART: 'launching' },
+        on: {
+          RESTART: {
+            target: 'playing',
+            actions: 'setup',
+          },
+        },
       },
       completed: {
-        on: { RESTART: 'launching' },
+        on: {
+          RESTART: {
+            target: 'playing',
+            actions: 'setup',
+          },
+        },
       },
     },
   },
@@ -76,9 +98,7 @@ const gameMachine = Machine(
     },
     actions: {
       setup,
-      start,
       next,
-      processNext,
     },
   }
 );

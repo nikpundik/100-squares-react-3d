@@ -5,7 +5,7 @@ import { a, useSpring } from 'react-spring/three';
 function Camera({ renderer, box }) {
   const ref = useRef();
   const { setDefaultCamera } = useThree();
-  useEffect(() => void setDefaultCamera(ref.current), []);
+  useEffect(() => void setDefaultCamera(ref.current), [setDefaultCamera]);
   useFrame(() => ref.current.updateMatrixWorld());
   const { position } = useSpring({
     position: [...renderer.getCameraPosition(box), 15],

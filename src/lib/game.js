@@ -19,35 +19,48 @@ class Game {
       y: Math.floor(i / size),
       k: i,
     }));
-    this.renderer = new Renderer(this);
+    this.renderer = new Renderer(size);
+    this.start();
+  }
+  start() {
+    this.currentKey = 0;
+    this.currentBox = null;
+    this.solution = {};
   }
   getBoxAt(x, y) {
     return this.boxes[y * this.size + x];
   }
-  getOption(box, [dx, dy]) {
-    const x = box.x + dx;
-    const y = box.y + dy;
+  getBoxAtKey(key) {
+    return this.boxes[key];
+  }
+  getOption(source, [dx, dy]) {
+    const x = source.x + dx;
+    const y = source.y + dy;
     if (x < 0 || x >= this.size || y < 0 || y >= this.size) return null;
-    return this.getBoxAt(x, y);
+    const box = this.getBoxAt(x, y);
+    return this.solution[box.k] ? null : box;
   }
   getOptions(box) {
     return options
       .map((option) => this.getOption(box, option))
       .filter((o) => o);
   }
-  isComplete(solution) {
-    return Object.keys(solution).length === this.size * this.size;
+  isComplete() {
+    const size = this.boxes.length;
+    return (
+      this.currentKey === size && Object.keys(this.solution).length === size
+    );
   }
-  isStuck(box, solution) {
-    if (!box) return false;
+  isStuck() {
+    if (!this.currentBox) return false;
     for (const option of options) {
-      const target = this.getOption(box, option);
-      if (!target) continue;
-      if (solution[target.k] === undefined) return false;
+      const target = this.getOption(this.currentBox, option);
+      if (target) return false;
     }
     return true;
   }
-  canBeSelected(source, target) {
+  canBeSelected(target) {
+    const source = this.currentBox;
     if (!source) return true;
     if (target.y === source.y) {
       if (target.x - 3 === source.x || target.x + 3 === source.x) return true;
@@ -61,6 +74,39 @@ class Game {
     )
       return true;
     return false;
+  }
+  isSelected(box) {
+    return this.solution[box.k] ? true : false;
+  }
+  isAvailable(box) {
+    return !this.isSelected(box) && this.canBeSelected(box);
+  }
+  next(key) {
+    const box = this.getBoxAtKey(key);
+    if (this.canBeSelected(box)) {
+      this.currentKey += 1;
+      this.currentBox = box;
+      this.solution[key] = this.currentKey;
+    }
+  }
+  getResult() {
+    return this.currentKey;
+  }
+  solve() {
+    this.currentKey = 99;
+    this.currentBox = this.getBoxAtKey(3);
+    for (let i = 1; i < 100; i += 1) {
+      this.solution[i] = i + 1;
+    }
+  }
+  stuck() {
+    this.currentKey = 98;
+    this.currentBox = this.getBoxAtKey(6);
+    for (let i = 0; i < 100; i += 1) {
+      this.solution[i] = i + 1;
+    }
+    delete this.solution[1];
+    delete this.solution[3];
   }
 }
 

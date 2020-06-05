@@ -3,7 +3,7 @@ import { a, useSprings } from 'react-spring/three';
 
 const getColor = (available, selected) => {
   if (available) return 'crimson';
-  if (selected) return 'darkslateblue';
+  if (selected) return 'seagreen';
   return 'sandybrown';
 };
 
